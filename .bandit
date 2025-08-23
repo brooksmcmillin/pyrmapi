@@ -1,0 +1,13 @@
+[bandit]
+# Exclude test files from security scanning
+exclude_dirs = ["tests", ".venv", "build", "dist"]
+
+# Skip certain checks that may be false positives for this project
+skips = [
+    "B101",  # assert_used - we use asserts in tests
+    "B603",  # subprocess_without_shell_equals_true - we need shell=True for some commands
+]
+
+# Set confidence and severity levels
+confidence = medium
+severity = medium
