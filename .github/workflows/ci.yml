@@ -30,7 +30,7 @@ jobs:
       run: uv python install ${{ matrix.python-version }}
     
     - name: Install dependencies
-      run: uv pip install -e ".[dev]"
+      run: uv sync
     
     - name: Run tests with coverage
       run: uv run pytest --cov=pyrmapi --cov-report=xml --cov-report=term-missing
@@ -59,7 +59,7 @@ jobs:
       run: uv python install 3.11
     
     - name: Install dependencies
-      run: uv pip install -e ".[dev]"
+      run: uv sync
     
     - name: Run ruff linter
       run: uv run ruff check --output-format=github .
@@ -86,7 +86,7 @@ jobs:
       run: uv python install 3.11
     
     - name: Install dependencies
-      run: uv pip install -e ".[dev]"
+      run: uv sync
     
     - name: Install pyright
       run: npm install -g pyright
@@ -110,7 +110,7 @@ jobs:
       run: uv python install 3.11
     
     - name: Install dependencies
-      run: uv pip install -e ".[dev]"
+      run: uv sync
     
     - name: Run bandit security linter
       run: |
@@ -218,13 +218,13 @@ jobs:
       run: uv python install 3.11
     
     - name: Install package in editable mode
-      run: uv pip install -e .
+      run: uv sync
     
     - name: Test CLI import
-      run: python -c "from pyrmapi.rmapi import RMAPI; print('Import successful')"
-    
+      run: uv run python -c "from pyrmapi.rmapi import RMAPI; print('Import successful')"
+
     - name: Test package installation
       run: |
         uv build
-        uv pip install dist/*.whl --force-reinstall
+        uv pip install --system dist/*.whl --force-reinstall
         python -c "import pyrmapi; print('Package install successful')"
