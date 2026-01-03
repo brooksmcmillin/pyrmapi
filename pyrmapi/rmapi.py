@@ -54,11 +54,13 @@ class RMAPI:
             # Validate URL scheme before downloading
             parsed_url = urlparse(RMAPI_URL)
             if parsed_url.scheme != "https":
-                raise ValueError(f"Only HTTPS URLs are allowed, got: {parsed_url.scheme}")
+                msg = f"Only HTTPS URLs are allowed, got: {parsed_url.scheme}"
+                raise ValueError(msg)
 
-            # Download the tarball
-            # nosemgrep: python.lang.security.audit.dynamic-urllib-use-detected.dynamic-urllib-use-detected
-            urllib.request.urlretrieve(RMAPI_URL, tarball_path)  # nosec B310
+            # Download the tarball (URL is a hardcoded constant)
+            urllib.request.urlretrieve(  # nosemgrep: dynamic-urllib-use-detected
+                RMAPI_URL, tarball_path
+            )  # nosec B310
             logging.debug(f"Downloaded rmapi to {tarball_path}")
 
             # Extract the tarball safely
