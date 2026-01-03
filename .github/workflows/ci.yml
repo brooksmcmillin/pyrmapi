@@ -217,5 +217,5 @@ jobs:
     - name: Test package installation
       run: |
         uv build
-        uv pip install --system dist/*.whl --force-reinstall
-        python -c "import pyrmapi; print('Package install successful')"
+        uv pip install dist/*.whl --force-reinstall
+        uv run python -c "import pyrmapi; print('Package install successful')"
