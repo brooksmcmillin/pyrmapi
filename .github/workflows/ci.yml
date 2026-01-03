@@ -19,7 +19,7 @@ jobs:
         python-version: ["3.11", "3.12", "3.13"]
     
     steps:
-    - uses: actions/checkout@v4
+    - uses: actions/checkout@v6
     
     - name: Install uv
       uses: astral-sh/setup-uv@v4
@@ -48,7 +48,7 @@ jobs:
     runs-on: ubuntu-latest
     
     steps:
-    - uses: actions/checkout@v4
+    - uses: actions/checkout@v6
     
     - name: Install uv
       uses: astral-sh/setup-uv@v4
@@ -75,7 +75,7 @@ jobs:
     runs-on: ubuntu-latest
     
     steps:
-    - uses: actions/checkout@v4
+    - uses: actions/checkout@v6
     
     - name: Install uv
       uses: astral-sh/setup-uv@v4
@@ -96,7 +96,7 @@ jobs:
     runs-on: ubuntu-latest
     
     steps:
-    - uses: actions/checkout@v4
+    - uses: actions/checkout@v6
     
     - name: Install uv
       uses: astral-sh/setup-uv@v4
@@ -137,7 +137,7 @@ jobs:
       image: semgrep/semgrep
 
     steps:
-    - uses: actions/checkout@v4
+    - uses: actions/checkout@v6
 
     - name: Run Semgrep scan
       run: semgrep scan --config=p/security-audit --config=p/secrets --config=p/python --sarif --output=semgrep.sarif
@@ -154,7 +154,7 @@ jobs:
     if: github.event_name == 'pull_request'
     
     steps:
-    - uses: actions/checkout@v4
+    - uses: actions/checkout@v6
     
     - name: Dependency Review
       uses: actions/dependency-review-action@v4
@@ -167,7 +167,7 @@ jobs:
     runs-on: ubuntu-latest
     
     steps:
-    - uses: actions/checkout@v4
+    - uses: actions/checkout@v6
     
     - name: Install uv
       uses: astral-sh/setup-uv@v4
@@ -198,7 +198,7 @@ jobs:
     if: github.event_name == 'pull_request'
     
     steps:
-    - uses: actions/checkout@v4
+    - uses: actions/checkout@v6
     
     - name: Install uv
       uses: astral-sh/setup-uv@v4
