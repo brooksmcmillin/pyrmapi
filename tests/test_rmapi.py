@@ -48,6 +48,8 @@ class TestRMAPI:
         mock_tar = Mock()
         mock_tarfile.return_value.__enter__.return_value = mock_tar
 
+        RMAPI()
+
         mock_urlretrieve.assert_called_once()
         mock_tar.extractall.assert_called_once_with("./bin")
         mock_chmod.assert_called_once()

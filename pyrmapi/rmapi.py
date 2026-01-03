@@ -85,7 +85,7 @@ class RMAPI:
         result = self._run_command(["mv", str(original_path), str(new_path)])
         return result.stdout
 
-    def put(self, local_path: Path, remote_path: Path):
+    def put(self, local_path: Path, remote_path: Path) -> str:
         result = self._run_command(["put", str(local_path), str(remote_path)])
         if result.returncode != 0:
             logging.error(f"Upload failed: {result.stderr}")
