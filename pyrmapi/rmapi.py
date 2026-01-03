@@ -21,7 +21,14 @@ class RMAPI:
         self.env["RMAPI_CONFIG"] = os.path.expanduser(config_path)
 
     def _run_command(self, command: list[str]) -> subprocess.CompletedProcess[str]:
-        result = subprocess.run(["./bin/rmapi"] + command, capture_output=True, text=True, check=False, env=self.env, timeout=10)
+        result = subprocess.run(
+            ["./bin/rmapi"] + command,
+            capture_output=True,
+            text=True,
+            check=False,
+            env=self.env,
+            timeout=10,
+        )
         if result.stderr:
             logging.error(result.stderr)
         return result
@@ -113,7 +120,9 @@ class RMAPI:
         remote_file_name: str | None = None,
     ) -> bool:
         """
-        Uploads a file from file_path to the remote_directory. By default, the file name will be the name of the file at file_path, if remote_file_name is set, this will overwrite it.
+        Uploads a file from file_path to the remote_directory.
+        By default, the file name will be the name of the file at file_path,
+        if remote_file_name is set, this will overwrite it.
         Returns True if successful, False otherwise.
         """
 
@@ -124,10 +133,9 @@ class RMAPI:
         # Ensure all remote directories exist
         path_parts = remote_directory.parts
         current_dir = ""
-        for i in range(1,len(path_parts)):
+        for i in range(1, len(path_parts)):
             current_dir += f"/{path_parts[i]}"
             self.ensure_directory(Path(current_dir))
-
 
         # Upload the file to reMarkable
         print(f"Uploading to: {remote_directory}")
@@ -140,7 +148,10 @@ class RMAPI:
             if remote_file_name is not None:
                 original_name = Path(file_path).name
                 print(f"Renaming to {remote_file_name}")
-                self.mv(Path(f"{remote_directory}/{original_name.replace('.pdf', '')}"), Path(f"{remote_directory}/{remote_file_name.replace('.pdf', '')}"))
+                self.mv(
+                    Path(f"{remote_directory}/{original_name.replace('.pdf', '')}"),
+                    Path(f"{remote_directory}/{remote_file_name.replace('.pdf', '')}"),
+                )
 
             print(f"Successfully uploaded file to {remote_directory}")
             return True

@@ -72,7 +72,7 @@ strict_equality = true
 [tool.ruff]
 target-version = "py311"
 line-length = 88
-select = [
+lint.select = [
     "E",  # pycodestyle errors
     "W",  # pycodestyle warnings
     "F",  # pyflakes
@@ -81,7 +81,7 @@ select = [
     "C4", # flake8-comprehensions
     "UP", # pyupgrade
 ]
-ignore = []
+lint.ignore = []
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
@@ -89,3 +89,8 @@ python_files = ["test_*.py"]
 python_classes = ["Test*"]
 python_functions = ["test_*"]
 addopts = "--cov=pyrmapi --cov-report=term-missing --cov-report=html"
+
+[dependency-groups]
+dev = [
+    "ruff>=0.12.10",
+]
