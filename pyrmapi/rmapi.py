@@ -1,9 +1,11 @@
 import logging
 import os
-import subprocess
+import subprocess  # nosec B404
+import sys
 import tarfile
 import urllib.request
 from pathlib import Path
+from urllib.parse import urlparse
 
 RMAPI_URL = (
     "https://github.com/ddvk/rmapi/releases/latest/download/rmapi-linux-amd64.tar.gz"
@@ -21,7 +23,14 @@ class RMAPI:
         self.env["RMAPI_CONFIG"] = os.path.expanduser(config_path)
 
     def _run_command(self, command: list[str]) -> subprocess.CompletedProcess[str]:
-        result = subprocess.run(["./bin/rmapi"] + command, capture_output=True, text=True, check=False, env=self.env, timeout=10)
+        result = subprocess.run(  # nosec B603
+            ["./bin/rmapi"] + command,
+            capture_output=True,
+            text=True,
+            check=False,
+            env=self.env,
+            timeout=10,
+        )
         if result.stderr:
             logging.error(result.stderr)
         return result
@@ -42,14 +51,34 @@ class RMAPI:
         tarball_path = "rmapi.tar.gz"
 
         try:
-            # Download the tarball
-            urllib.request.urlretrieve(RMAPI_URL, tarball_path)
+            # Validate URL scheme before downloading
+            parsed_url = urlparse(RMAPI_URL)
+            if parsed_url.scheme != "https":
+                msg = f"Only HTTPS URLs are allowed, got: {parsed_url.scheme}"
+                raise ValueError(msg)
+
+            # Download the tarball (URL is a hardcoded constant)
+            urllib.request.urlretrieve(  # nosemgrep: dynamic-urllib-use-detected
+                RMAPI_URL, tarball_path
+            )  # nosec B310
             logging.debug(f"Downloaded rmapi to {tarball_path}")
 
-            # Extract the tarball
+            # Extract the tarball safely
             logging.info("Extracting rmapi...")
             with tarfile.open(tarball_path, "r:gz") as tar:
-                tar.extractall("./bin")
+                # Use data filter to prevent path traversal attacks
+                if sys.version_info >= (3, 12):
+                    tar.extractall("./bin", filter="data")  # nosec B202
+                else:
+                    # Manual safe extraction for Python < 3.12
+                    dest = Path("./bin").resolve()
+                    for member in tar.getmembers():
+                        member_path = (dest / member.name).resolve()
+                        if not member_path.is_relative_to(dest):
+                            raise ValueError(f"Attempted path traversal: {member.name}")
+                        if member.issym() or member.islnk():
+                            raise ValueError(f"Refusing to extract link: {member.name}")
+                    tar.extractall("./bin")  # nosec B202
             logging.info("Extracted rmapi successfully")
 
             # Make rmapi executable
@@ -78,7 +107,7 @@ class RMAPI:
         result = self._run_command(["mv", str(original_path), str(new_path)])
         return result.stdout
 
-    def put(self, local_path: Path, remote_path: Path):
+    def put(self, local_path: Path, remote_path: Path) -> str:
         result = self._run_command(["put", str(local_path), str(remote_path)])
         if result.returncode != 0:
             logging.error(f"Upload failed: {result.stderr}")
@@ -113,7 +142,9 @@ class RMAPI:
         remote_file_name: str | None = None,
     ) -> bool:
         """
-        Uploads a file from file_path to the remote_directory. By default, the file name will be the name of the file at file_path, if remote_file_name is set, this will overwrite it.
+        Uploads a file from file_path to the remote_directory.
+        By default, the file name will be the name of the file at file_path,
+        if remote_file_name is set, this will overwrite it.
         Returns True if successful, False otherwise.
         """
 
@@ -124,10 +155,9 @@ class RMAPI:
         # Ensure all remote directories exist
         path_parts = remote_directory.parts
         current_dir = ""
-        for i in range(1,len(path_parts)):
+        for i in range(1, len(path_parts)):
             current_dir += f"/{path_parts[i]}"
             self.ensure_directory(Path(current_dir))
-
 
         # Upload the file to reMarkable
         print(f"Uploading to: {remote_directory}")
@@ -140,7 +170,10 @@ class RMAPI:
             if remote_file_name is not None:
                 original_name = Path(file_path).name
                 print(f"Renaming to {remote_file_name}")
-                self.mv(Path(f"{remote_directory}/{original_name.replace('.pdf', '')}"), Path(f"{remote_directory}/{remote_file_name.replace('.pdf', '')}"))
+                self.mv(
+                    Path(f"{remote_directory}/{original_name.replace('.pdf', '')}"),
+                    Path(f"{remote_directory}/{remote_file_name.replace('.pdf', '')}"),
+                )
 
             print(f"Successfully uploaded file to {remote_directory}")
             return True

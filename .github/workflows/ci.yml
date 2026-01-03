@@ -30,7 +30,7 @@ jobs:
       run: uv python install ${{ matrix.python-version }}
     
     - name: Install dependencies
-      run: uv sync --extra dev
+      run: uv sync
     
     - name: Run tests with coverage
       run: uv run pytest --cov=pyrmapi --cov-report=xml --cov-report=term-missing
@@ -59,7 +59,7 @@ jobs:
       run: uv python install 3.11
     
     - name: Install dependencies
-      run: uv sync --extra dev
+      run: uv sync
     
     - name: Run ruff linter
       run: uv run ruff check --output-format=github .
@@ -86,13 +86,10 @@ jobs:
       run: uv python install 3.11
     
     - name: Install dependencies
-      run: uv sync --extra dev
-    
-    - name: Install pyright
-      run: npm install -g pyright
+      run: uv sync
     
     - name: Run pyright
-      run: pyright pyrmapi/
+      run: uv run --with pyright pyright pyrmapi/
 
   security:
     name: Security Scan
@@ -110,7 +107,7 @@ jobs:
       run: uv python install 3.11
     
     - name: Install dependencies
-      run: uv sync --extra dev
+      run: uv sync
     
     - name: Run bandit security linter
       run: |
@@ -125,7 +122,7 @@ jobs:
         uv run safety check
     
     - name: Upload security scan results
-      uses: actions/upload-artifact@v5
+      uses: actions/upload-artifact@v6
       if: always()
       with:
         name: security-reports
@@ -136,21 +133,15 @@ jobs:
   semgrep:
     name: Semgrep Security Scan
     runs-on: ubuntu-latest
-    
+    container:
+      image: semgrep/semgrep
+
     steps:
     - uses: actions/checkout@v4
-    
-    - name: Run Semgrep
-      uses: semgrep/semgrep-action@v1
-      with:
-        config: >-
-          p/security-audit
-          p/secrets
-          p/python
-        publishToken: ${{ secrets.SEMGREP_APP_TOKEN }}
-        publishDeployment: ${{ github.repository }}
-        generateSarif: "1"
-    
+
+    - name: Run Semgrep scan
+      run: semgrep scan --config=p/security-audit --config=p/secrets --config=p/python --sarif --output=semgrep.sarif
+
     - name: Upload SARIF file
       uses: github/codeql-action/upload-sarif@v3
       with:
@@ -195,7 +186,7 @@ jobs:
         uv run twine check dist/*
     
     - name: Upload build artifacts
-      uses: actions/upload-artifact@v5
+      uses: actions/upload-artifact@v6
       with:
         name: dist
         path: dist/
@@ -218,13 +209,13 @@ jobs:
       run: uv python install 3.11
     
     - name: Install package in editable mode
-      run: uv pip install -e .
+      run: uv sync
     
     - name: Test CLI import
-      run: python -c "from pyrmapi.rmapi import RMAPI; print('Import successful')"
-    
+      run: uv run python -c "from pyrmapi.rmapi import RMAPI; print('Import successful')"
+
     - name: Test package installation
       run: |
         uv build
         uv pip install dist/*.whl --force-reinstall
-        python -c "import pyrmapi; print('Package install successful')"
+        uv run python -c "import pyrmapi; print('Package install successful')"
