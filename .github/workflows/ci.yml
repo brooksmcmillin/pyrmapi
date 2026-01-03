@@ -88,11 +88,8 @@ jobs:
     - name: Install dependencies
       run: uv sync
     
-    - name: Install pyright
-      run: npm install -g pyright
-    
     - name: Run pyright
-      run: pyright pyrmapi/
+      run: uv run --with pyright pyright pyrmapi/
 
   security:
     name: Security Scan

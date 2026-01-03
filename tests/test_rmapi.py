@@ -1,4 +1,5 @@
 import os
+import sys
 from pathlib import Path
 from unittest.mock import Mock, patch
 
@@ -51,7 +52,10 @@ class TestRMAPI:
         RMAPI()
 
         mock_urlretrieve.assert_called_once()
-        mock_tar.extractall.assert_called_once_with("./bin")
+        if sys.version_info >= (3, 12):
+            mock_tar.extractall.assert_called_once_with("./bin", filter="data")
+        else:
+            mock_tar.extractall.assert_called_once_with("./bin")
         mock_chmod.assert_called_once()
         mock_remove.assert_called_once()
 
