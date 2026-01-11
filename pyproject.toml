@@ -27,6 +27,9 @@ classifiers = [
 ]
 requires-python = ">=3.11"
 dependencies = [
+    "httpx>=0.28",
+    "pydantic>=2.0",
+    "pyyaml>=6.0",
     "typer>=0.16.1",
 ]
 
@@ -60,6 +63,12 @@ warn_unused_ignores = true
 warn_no_return = true
 warn_unreachable = true
 strict_equality = true
+plugins = ["pydantic.mypy"]
+
+[tool.pydantic-mypy]
+init_forbid_extra = true
+init_typed = true
+warn_required_dynamic_aliases = true
 
 [tool.ruff]
 target-version = "py311"
@@ -86,6 +95,9 @@ addopts = "--cov=pyrmapi --cov-report=term-missing --cov-report=html"
 dev = [
     "mypy>=1.17.1",
     "pytest>=8.4.1",
+    "pytest-asyncio>=0.25",
     "pytest-cov>=6.2.1",
+    "pytest-httpx>=0.35",
     "ruff>=0.12.10",
+    "types-pyyaml>=6.0",
 ]
