@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-from datetime import UTC, datetime
 from enum import Enum
 from typing import TYPE_CHECKING
 
@@ -62,65 +61,28 @@ class ItemType(str, Enum):
     COLLECTION = "CollectionType"
 
 
-class ServiceDiscoveryResponse(BaseModel):
-    """Response from the service discovery endpoint."""
-
-    status: str = Field(..., alias="Status")
-    host: str = Field(..., alias="Host")
-
-    model_config = {"populate_by_name": True}
-
-
 class CloudItem(BaseModel):
-    """Base model for items in the reMarkable cloud storage.
+    """Item in the reMarkable cloud storage.
 
-    This represents both documents (notebooks/PDFs) and collections (folders).
+    Represents both documents (notebooks/PDFs) and collections (folders)
+    as returned by the sync v3 API tree walk.
     """
 
-    id: str = Field(..., alias="ID", description="UUID of the item")
-    version: int = Field(..., alias="Version", description="Version number for sync")
-    message: str = Field(default="", alias="Message", description="Status message")
-    success: bool = Field(default=True, alias="Success", description="Operation status")
-    blob_url_get: str = Field(
-        default="",
-        alias="BlobURLGet",
-        description="Signed URL for downloading content",
-    )
-    blob_url_get_expires: str = Field(
-        default="",
-        alias="BlobURLGetExpires",
-        description="Expiration time for download URL",
-    )
-    modified_client: str = Field(
-        default="",
-        alias="ModifiedClient",
-        description="Last modification timestamp from client",
-    )
+    id: str = Field(..., description="UUID of the item")
+    hash: str = Field(default="", description="Content hash from sync tree")
     item_type: ItemType = Field(
         ...,
-        alias="Type",
         description="Type of item (DocumentType or CollectionType)",
     )
-    visible_name: str = Field(
-        default="",
-        alias="VissibleName",  # Note: API uses this spelling
-        description="Display name of the item",
-    )
-    current_page: int = Field(
-        default=0,
-        alias="CurrentPage",
-        description="Current page number (for documents)",
-    )
-    bookmarked: bool = Field(
-        default=False,
-        alias="Bookmarked",
-        description="Whether the item is bookmarked",
-    )
+    visible_name: str = Field(default="", description="Display name of the item")
     parent: str = Field(
         default="",
-        alias="Parent",
         description="UUID of parent folder (empty for root items)",
     )
+    last_modified: str = Field(
+        default="", description="Last modification timestamp (epoch ms)"
+    )
+    file_type: str = Field(default="", description="File type (pdf, epub, etc.)")
 
     model_config = {"populate_by_name": True}
 
@@ -135,72 +97,74 @@ class CloudItem(BaseModel):
         return self.item_type == ItemType.DOCUMENT
 
 
-class UploadRequestItem(BaseModel):
-    """Request item for initiating an upload."""
+class SyncRootResponse(BaseModel):
+    """Response from the sync v4 root endpoint."""
 
-    id: str = Field(..., alias="ID", description="UUID for the new item")
-    version: int = Field(..., alias="Version", description="Version number (1 for new)")
-    item_type: ItemType = Field(..., alias="Type", description="Type of item")
-
-    model_config = {"populate_by_name": True}
-
-
-class UploadRequestResponse(BaseModel):
-    """Response from upload request endpoint."""
-
-    id: str = Field(..., alias="ID", description="UUID of the item")
-    version: int = Field(..., alias="Version", description="Version number")
-    message: str = Field(default="", alias="Message", description="Status message")
-    success: bool = Field(default=True, alias="Success", description="Operation status")
-    blob_url_put: str = Field(
-        default="",
-        alias="BlobURLPut",
-        description="Signed URL for uploading content",
-    )
-    blob_url_put_expires: str = Field(
-        default="",
-        alias="BlobURLPutExpires",
-        description="Expiration time for upload URL",
-    )
+    hash: str = Field(..., description="Root index hash")
+    generation: int = Field(..., description="Generation number")
+    schema_version: int = Field(..., alias="schemaVersion", description="Schema version")
 
     model_config = {"populate_by_name": True}
 
 
-class UpdateStatusItem(BaseModel):
-    """Request item for updating item metadata."""
+class IndexEntry(BaseModel):
+    """Parsed entry from a sync v3 index file.
 
-    id: str = Field(..., alias="ID", description="UUID of the item")
-    version: int = Field(..., alias="Version", description="Incremented version number")
-    parent: str = Field(default="", alias="Parent", description="UUID of parent folder")
-    visible_name: str = Field(
-        ...,
-        alias="VissibleName",  # Note: API uses this spelling
-        description="Display name of the item",
-    )
-    item_type: ItemType = Field(..., alias="Type", description="Type of item")
-    modified_client: str = Field(
-        ...,
-        alias="ModifiedClient",
-        description="Current timestamp in ISO format",
-    )
-    bookmarked: bool = Field(
-        default=False,
-        alias="Bookmarked",
-        description="Whether the item is bookmarked",
-    )
+    Index format (schema v3):
+        3
+        {hash}:{type}:{id}:{subfiles}:{size}
+        ...
+
+    Type 80000000 = collection/index, 0 = file.
+    """
+
+    hash: str = Field(..., description="Content hash")
+    entry_type: str = Field(..., description="Entry type (80000000=index, 0=file)")
+    id: str = Field(..., description="UUID or filename")
+    subfiles: int = Field(default=0, description="Number of sub-files")
+    size: int = Field(default=0, description="Size in bytes")
+
+    @property
+    def is_index(self) -> bool:
+        """Check if this entry is an index (collection/document container)."""
+        return self.entry_type == "80000000"
+
+    @property
+    def is_file(self) -> bool:
+        """Check if this entry is a plain file."""
+        return self.entry_type == "0"
+
+
+class UploadResponse(BaseModel):
+    """Response from the v2 upload endpoint."""
+
+    doc_id: str = Field(..., alias="docID", description="UUID of the uploaded document")
+    hash: str = Field(..., description="Content hash")
 
     model_config = {"populate_by_name": True}
 
-    @classmethod
-    def now_timestamp(cls) -> str:
-        """Get current UTC timestamp in the format expected by the API."""
-        return datetime.now(tz=UTC).strftime("%Y-%m-%dT%H:%M:%S.%f")[:-3] + "Z"
+
+class DocumentMetadata(BaseModel):
+    """Metadata JSON found in document .metadata blobs."""
+
+    visible_name: str = Field(default="", alias="visibleName")
+    parent: str = Field(default="")
+    type: str = Field(default="")
+    last_modified: str = Field(default="", alias="lastModified")
+    deleted: bool = Field(default=False)
+    metadatamodified: bool = Field(default=False)
+    modified: bool = Field(default=False)
+    pinned: bool = Field(default=False)
+    synced: bool = Field(default=False)
+    version: int = Field(default=0)
+
+    model_config = {"populate_by_name": True}
 
 
-class DeleteItem(BaseModel):
-    """Request item for deleting an item."""
+class DocumentContent(BaseModel):
+    """Content JSON found in document .content blobs."""
 
-    id: str = Field(..., alias="ID", description="UUID of the item to delete")
-    version: int = Field(..., alias="Version", description="Current version of item")
+    file_type: str = Field(default="", alias="fileType")
+    page_count: int = Field(default=0, alias="pageCount")
 
     model_config = {"populate_by_name": True}
