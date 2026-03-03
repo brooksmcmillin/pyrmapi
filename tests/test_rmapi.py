@@ -5,6 +5,9 @@ from unittest.mock import Mock, patch
 
 from pyrmapi.rmapi import RMAPI
 
+RMAPI_BIN = str(Path("~/.local/share/pyrmapi/bin/rmapi").expanduser())
+RMAPI_BIN_DIR = str(Path("~/.local/share/pyrmapi/bin").expanduser())
+
 
 class TestRMAPI:
     """Test suite for RMAPI class."""
@@ -18,7 +21,7 @@ class TestRMAPI:
             rmapi = RMAPI()
 
         assert "RMAPI_CONFIG" in rmapi.env
-        assert rmapi.env["RMAPI_CONFIG"] == "./.rmapi"
+        assert rmapi.env["RMAPI_CONFIG"] == os.path.expanduser("~/.rmapi")
 
     @patch("pyrmapi.rmapi.Path.exists")
     def test_init_with_custom_config(self, mock_exists):
@@ -34,12 +37,19 @@ class TestRMAPI:
         assert rmapi.env["RMAPI_CONFIG"] == expected_path
 
     @patch("pyrmapi.rmapi.Path.exists")
+    @patch("pyrmapi.rmapi.Path.mkdir")
     @patch("pyrmapi.rmapi.urllib.request.urlretrieve")
     @patch("pyrmapi.rmapi.tarfile.open")
     @patch("pyrmapi.rmapi.os.chmod")
     @patch("pyrmapi.rmapi.os.remove")
     def test_setup_downloads_rmapi(
-        self, mock_remove, mock_chmod, mock_tarfile, mock_urlretrieve, mock_exists
+        self,
+        mock_remove,
+        mock_chmod,
+        mock_tarfile,
+        mock_urlretrieve,
+        mock_mkdir,
+        mock_exists,
     ):
         """Test setup method downloads and extracts rmapi when not present."""
         mock_exists.side_effect = [
@@ -53,9 +63,11 @@ class TestRMAPI:
 
         mock_urlretrieve.assert_called_once()
         if sys.version_info >= (3, 12):
-            mock_tar.extractall.assert_called_once_with("./bin", filter="data")
+            mock_tar.extractall.assert_called_once_with(
+                RMAPI_BIN_DIR, filter="data"
+            )
         else:
-            mock_tar.extractall.assert_called_once_with("./bin")
+            mock_tar.extractall.assert_called_once_with(RMAPI_BIN_DIR)
         mock_chmod.assert_called_once()
         mock_remove.assert_called_once()
 
@@ -79,7 +91,7 @@ class TestRMAPI:
             result = rmapi._run_command(["ls", "/"])
 
         mock_run.assert_called_once_with(
-            ["./bin/rmapi", "ls", "/"],
+            [RMAPI_BIN, "ls", "/"],
             capture_output=True,
             text=True,
             check=False,
@@ -117,7 +129,7 @@ class TestRMAPI:
 
         assert result == "[d] folder1\n[f] file1.pdf"
         mock_run.assert_called_once_with(
-            ["./bin/rmapi", "ls", "/"],
+            [RMAPI_BIN, "ls", "/"],
             capture_output=True,
             text=True,
             check=False,
@@ -140,7 +152,7 @@ class TestRMAPI:
 
         assert result == "Directory created"
         mock_run.assert_called_once_with(
-            ["./bin/rmapi", "mkdir", "/test"],
+            [RMAPI_BIN, "mkdir", "/test"],
             capture_output=True,
             text=True,
             check=False,
@@ -161,7 +173,7 @@ class TestRMAPI:
 
         assert result == "File moved"
         mock_run.assert_called_once_with(
-            ["./bin/rmapi", "mv", "/old", "/new"],
+            [RMAPI_BIN, "mv", "/old", "/new"],
             capture_output=True,
             text=True,
             check=False,

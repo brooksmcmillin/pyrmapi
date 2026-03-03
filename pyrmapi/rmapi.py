@@ -13,7 +13,7 @@ RMAPI_URL = (
 
 
 class RMAPI:
-    def __init__(self, config_path: str = "./.rmapi"):
+    def __init__(self, config_path: str = "~/.rmapi"):
         # Make sure the rmapi executable exists
         logging.basicConfig(level=logging.INFO)
         self.setup()
@@ -23,8 +23,9 @@ class RMAPI:
         self.env["RMAPI_CONFIG"] = os.path.expanduser(config_path)
 
     def _run_command(self, command: list[str]) -> subprocess.CompletedProcess[str]:
+        rmapi_bin = Path("~/.local/share/pyrmapi/bin/rmapi").expanduser()
         result = subprocess.run(  # nosec B603
-            ["./bin/rmapi"] + command,
+            [str(rmapi_bin)] + command,
             capture_output=True,
             text=True,
             check=False,
@@ -40,15 +41,17 @@ class RMAPI:
         Download and unpack the lastest version of rmapi if needed
         """
 
-        # Check if rmapi is already in the bin directory
-        rmapi_path = Path("./bin/rmapi")
+        # Check if rmapi is already installed
+        bin_dir = Path("~/.local/share/pyrmapi/bin").expanduser()
+        rmapi_path = bin_dir / "rmapi"
         if rmapi_path.exists():
-            logging.debug("rmapi already exists in current directory")
+            logging.debug("rmapi already exists at %s", rmapi_path)
             return
 
         # If not, download and unpack it
         logging.debug("Downloading rmapi...")
-        tarball_path = "rmapi.tar.gz"
+        bin_dir.mkdir(parents=True, exist_ok=True)
+        tarball_path = str(bin_dir / "rmapi.tar.gz")
 
         try:
             # Validate URL scheme before downloading
@@ -65,20 +68,21 @@ class RMAPI:
 
             # Extract the tarball safely
             logging.info("Extracting rmapi...")
+            extract_dir = str(bin_dir)
             with tarfile.open(tarball_path, "r:gz") as tar:
                 # Use data filter to prevent path traversal attacks
                 if sys.version_info >= (3, 12):
-                    tar.extractall("./bin", filter="data")  # nosec B202
+                    tar.extractall(extract_dir, filter="data")  # nosec B202
                 else:
                     # Manual safe extraction for Python < 3.12
-                    dest = Path("./bin").resolve()
+                    dest = bin_dir.resolve()
                     for member in tar.getmembers():
                         member_path = (dest / member.name).resolve()
                         if not member_path.is_relative_to(dest):
                             raise ValueError(f"Attempted path traversal: {member.name}")
                         if member.issym() or member.islnk():
                             raise ValueError(f"Refusing to extract link: {member.name}")
-                    tar.extractall("./bin")  # nosec B202
+                    tar.extractall(extract_dir)  # nosec B202
             logging.info("Extracted rmapi successfully")
 
             # Make rmapi executable
