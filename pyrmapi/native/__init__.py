@@ -16,15 +16,18 @@ from .cloud import (
     ItemNotFoundError,
     ListItemsError,
     MoveError,
-    ServiceDiscoveryError,
     UploadError,
 )
 from .models import (
     AuthTokens,
     CloudItem,
     DeviceRegistrationRequest,
+    DocumentContent,
+    DocumentMetadata,
+    IndexEntry,
     ItemType,
-    ServiceDiscoveryResponse,
+    SyncRootResponse,
+    UploadResponse,
 )
 
 __all__ = [
@@ -42,12 +45,15 @@ __all__ = [
     "CloudItem",
     "CreateFolderError",
     "DeleteError",
+    "DocumentContent",
+    "DocumentMetadata",
     "DownloadError",
+    "IndexEntry",
     "ItemNotFoundError",
     "ItemType",
     "ListItemsError",
     "MoveError",
-    "ServiceDiscoveryError",
-    "ServiceDiscoveryResponse",
+    "SyncRootResponse",
     "UploadError",
+    "UploadResponse",
 ]

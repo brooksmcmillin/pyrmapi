@@ -26,8 +26,9 @@ if TYPE_CHECKING:
     from typing import Self
 
 # reMarkable Cloud API endpoints
-DEVICE_TOKEN_URL = "https://my.remarkable.com/token/json/2/device/new"
-USER_TOKEN_URL = "https://my.remarkable.com/token/json/2/user/new"
+AUTH_HOST = "https://webapp-prod.cloud.remarkable.engineering"
+DEVICE_TOKEN_URL = f"{AUTH_HOST}/token/json/2/device/new"
+USER_TOKEN_URL = f"{AUTH_HOST}/token/json/2/user/new"
 
 # Default config locations
 DEFAULT_CONFIG_NAME = ".rmapi"
@@ -37,7 +38,7 @@ XDG_CONFIG_NAME = "rmapi/rmapi.conf"
 CONFIG_FILE_MODE = stat.S_IRUSR | stat.S_IWUSR  # 0o600
 
 # HTTP client settings
-DEFAULT_TIMEOUT = 10.0
+DEFAULT_TIMEOUT = 30.0
 
 
 class AuthError(Exception):
